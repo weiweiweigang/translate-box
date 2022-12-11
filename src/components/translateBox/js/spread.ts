@@ -6,24 +6,32 @@
  * @Description: 
  * @FilePath: \translateBox\src\components\translateBox\js\spread.ts
  */
-import { ref } from "vue"
+import { Ref, ref } from "vue"
 import { 
-  translateBoxHeight, 
-  translateBoxLeft, 
-  translateBoxTop, 
-  translateBoxWidth, 
-  isReverseX, 
-  isReverseY, 
-  translateBoxRotate
+  getElement
 } from "./data";
 import { Tool } from "./tool";
 
 export type SpreadType = 'top' | 'right' | 'bottom' | 'left' | 'leftTop' | 'rightTop' | 'rightBottom' | 'leftBottom';
 export type MoveType = 'begin' | 'moving' | 'end'
 
-export const isShift = ref(false); //是否按下control建
-export const isSpreading = ref(false);
-export const curSpreadType = ref<SpreadType>('top')
+interface SpreadBaseParam {
+  e: MouseEvent,
+  translateBoxRotate: Ref<number>,
+  translateBoxWidth: Ref<number>,
+  translateBoxHeight: Ref<number>,
+  translateBoxTop: Ref<number>,
+  translateBoxLeft: Ref<number>,
+  isReverseX: Ref<Boolean>,
+  isReverseY: Ref<Boolean>,
+  isShift: Ref<Boolean>,
+  isSpreading: Ref<Boolean>,
+  curSpreadType: Ref<SpreadType>,
+  boxId: Ref<string>,
+}
+
+interface MoveToParam extends SpreadBaseParam { moveValue: number}
+interface SpreadBaseParamAndSpreadType extends SpreadBaseParam {spreadType: SpreadType}
 
 /**
  * @description: 元素缩放处理函数
@@ -31,58 +39,59 @@ export const curSpreadType = ref<SpreadType>('top')
  * @param {MoveType} moveType 移动类型 'begin' | 'moving' | 'end'
  * @param {MouseEvent} e 鼠标事件参数
  * @return {*}
- */
-export function spreadHand(spreadType: SpreadType, moveType: MoveType, e: MouseEvent){
-  const distributeObj: Record<MoveType, (e: MouseEvent,  spreadType: SpreadType) => void> = {
+ */interface SpreadHand extends SpreadBaseParamAndSpreadType {moveType: MoveType}
+
+export function spreadHand(param: SpreadHand){
+  const distributeObj: Record<MoveType, (param: SpreadBaseParamAndSpreadType) => void> = {
     'begin': beginMoveHandle,
     'moving': onMovingHandle,
     'end': endMoveHandle
   }
 
-  curSpreadType.value = spreadType;
-  distributeObj[moveType](e, spreadType)
+  param.curSpreadType.value = param.spreadType;
+  distributeObj[param.moveType](param)
 }
 
 // 开始移动
 let [mouseBeginX, mouseBeginY] = [0, 0];
 let [originLeft, originTop] = [0, 0];
 let [originWidth, originHeight] = [0, 0];
-let [originReverseX, originReverseY] = [false, false];
+let [originReverseX, originReverseY]: [Boolean, Boolean] = [false, false];
 let [centerX, centerY] = [0, 0];
-function beginMoveHandle(e: MouseEvent) {
-  isSpreading.value = true;
-  [mouseBeginX, mouseBeginY] = [e.clientX, e.clientY];
-  [originLeft, originTop] = [translateBoxLeft.value, translateBoxTop.value];
-  [originWidth, originHeight] = [translateBoxWidth.value, translateBoxHeight.value];
-  [originReverseX, originReverseY] = [isReverseX.value, isReverseY.value];
-  const {left, top} = document.querySelector('.translateBox')!.getBoundingClientRect();
-  [centerX, centerY] = [left + translateBoxWidth.value/2, top+translateBoxHeight.value/2];
+function beginMoveHandle(param: SpreadBaseParamAndSpreadType) {
+  param.isSpreading.value = true;
+  [mouseBeginX, mouseBeginY] = [param.e.clientX, param.e.clientY];
+  [originLeft, originTop] = [param.translateBoxLeft.value, param.translateBoxTop.value];
+  [originWidth, originHeight] = [param.translateBoxWidth.value, param.translateBoxHeight.value];
+  [originReverseX, originReverseY] = [param.isReverseX.value, param.isReverseY.value];
+  const {left, top} = getElement(param.boxId.value).getBoundingClientRect();
+  [centerX, centerY] = [left + param.translateBoxWidth.value/2, top+param.translateBoxHeight.value/2];
 }
 
 // 移动中
-function onMovingHandle(e: MouseEvent, spreadType: SpreadType) {
-  if(!isSpreading.value) return;
-  if(e.clientX === 0) return;
-  moveTo(e, spreadType)
+function onMovingHandle(param: SpreadBaseParamAndSpreadType) {
+  if(!param.isSpreading.value) return;
+  if(param.e.clientX === 0) return;
+  moveTo(param)
 }
 
 // 移动结束
-function endMoveHandle(e: MouseEvent, spreadType: SpreadType) {
-  if(!isSpreading.value) return;
-  isSpreading.value = false;
-  moveTo(e, spreadType)
+function endMoveHandle(param: SpreadBaseParamAndSpreadType) {
+  if(!param.isSpreading.value) return;
+  param.isSpreading.value = false;
+  moveTo(param)
 }
 
-function moveTo(e: MouseEvent, spreadType: SpreadType) {
-  if(spreadType === 'right') moveToRight(getMoveValue(e));
-  if(spreadType === 'left') moveToLeft(getMoveValue(e));
-  if(spreadType === 'bottom') moveToBottom(getMoveValue(e));
-  if(spreadType === 'top') moveToTop(getMoveValue(e));
+function moveTo(param: SpreadBaseParamAndSpreadType) {
+  if(param.spreadType === 'right') moveToRight({...{moveValue: getMoveValue(param.e)}, ...param});
+  if(param.spreadType === 'left') moveToLeft({...{moveValue: getMoveValue(param.e)}, ...param});
+  if(param.spreadType === 'bottom') moveToBottom({...{moveValue: getMoveValue(param.e)}, ...param});
+  if(param.spreadType === 'top') moveToTop({...{moveValue: getMoveValue(param.e)}, ...param});
 
-  if(spreadType === 'rightBottom') moveToRightBottom(e);
-  if(spreadType === 'rightTop') moveToRightTop(e);
-  if(spreadType === 'leftTop') moveToLeftTop(e);
-  if(spreadType === 'leftBottom') moveToLeftBottom(e);
+  if(param.spreadType === 'rightBottom') moveToRightBottom(param);
+  if(param.spreadType === 'rightTop') moveToRightTop(param);
+  if(param.spreadType === 'leftTop') moveToLeftTop(param);
+  if(param.spreadType === 'leftBottom') moveToLeftBottom(param);
 }
 
 // -------------------------上下左右缩放begin--------------------
@@ -101,7 +110,7 @@ function getMoveValue(e: MouseEvent): number {
 /**
  * @description: 上下左右缩放时计算相对于该方向上中心点需要偏移的距离
  */
-function getCenterOffset(moveValue: number, type: 'with'| 'height') {
+function getCenterOffset(translateBoxRotate: Ref<number>, moveValue: number, type: 'with'| 'height') {
   const centerMoveValue = moveValue / 2;
   const centerOffsetX = (type === 'with')? (centerMoveValue - centerMoveValue * Math.cos(translateBoxRotate.value*Math.PI/180)) : centerMoveValue*Math.sin(translateBoxRotate.value*Math.PI/180);
   const centerOffsetY = (type === 'with')? centerMoveValue * Math.sin(translateBoxRotate.value*Math.PI/180) : (centerMoveValue - centerMoveValue * Math.cos(translateBoxRotate.value*Math.PI/180));
@@ -111,96 +120,97 @@ function getCenterOffset(moveValue: number, type: 'with'| 'height') {
 /**
  * @description: 上下左右缩放时设置宽度或高度
  */
-function setWidthOrHeight(moveValue: number, type: 'with'| 'height') {
-  let newWidth = type === 'with' ? (originWidth + moveValue) : 0;
-  let newHeight = type === 'height'? (originHeight + moveValue) : 0;
+interface SetWidthOrHeight extends MoveToParam {type: 'with'| 'height'}
+function setWidthOrHeight(param: SetWidthOrHeight) {
+  let newWidth = param.type === 'with' ? (originWidth + param.moveValue) : 0;
+  let newHeight = param.type === 'height'? (originHeight + param.moveValue) : 0;
 
-  if(isShift.value) {
-    if(type === 'with') {
-      newHeight = originHeight + moveValue*originHeight/originWidth;
+  if(param.isShift.value) {
+    if(param.type === 'with') {
+      newHeight = originHeight + param.moveValue*originHeight/originWidth;
     }else {
-      newWidth = originWidth + moveValue*originWidth/originHeight;
+      newWidth = originWidth + param.moveValue*originWidth/originHeight;
     }
   }
 
   if(newWidth > 0) {
-    translateBoxWidth.value = newWidth;
-    (isReverseX.value !== originReverseX)? isReverseX.value = originReverseX:'';
+    param.translateBoxWidth.value = newWidth;
+    (param.isReverseX.value !== originReverseX)? param.isReverseX.value = originReverseX:'';
   }else if(newWidth < 0) {
-    translateBoxWidth.value = -newWidth;
-    (isReverseX.value === originReverseX)? isReverseX.value = !originReverseX:'';
+    param.translateBoxWidth.value = -newWidth;
+    (param.isReverseX.value === originReverseX)? param.isReverseX.value = !originReverseX:'';
   }
 
   if(newHeight > 0) {
-    translateBoxHeight.value = newHeight;
-    (isReverseY.value !== originReverseY)? isReverseY.value = originReverseY:'';
+    param.translateBoxHeight.value = newHeight;
+    (param.isReverseY.value !== originReverseY)? param.isReverseY.value = originReverseY:'';
   }else if(newHeight < 0) {
-    translateBoxHeight.value = -newHeight;
-    (isReverseY.value === originReverseY)? isReverseY.value = !originReverseY:'';
+    param.translateBoxHeight.value = -newHeight;
+    (param.isReverseY.value === originReverseY)? param.isReverseY.value = !originReverseY:'';
   }
 }
 
-function moveToRight(moveValue: number) {
-  setWidthOrHeight(moveValue, 'with')
-  const [centerOffsetX, centerOffsetY] = getCenterOffset(moveValue, 'with')
+function moveToRight(param: MoveToParam) {
+  setWidthOrHeight({...{type: 'with'}, ...param})
+  const [centerOffsetX, centerOffsetY] = getCenterOffset(param.translateBoxRotate, param.moveValue, 'with')
   
-  if(isShift.value) {
-    const heightAddValue = translateBoxHeight.value - originHeight;
-    translateBoxTop.value = originTop + centerOffsetY - heightAddValue/2;
-  }else translateBoxTop.value = originTop + centerOffsetY;
+  if(param.isShift.value) {
+    const heightAddValue = param.translateBoxHeight.value - originHeight;
+    param.translateBoxTop.value = originTop + centerOffsetY - heightAddValue/2;
+  }else param.translateBoxTop.value = originTop + centerOffsetY;
 
-  if(originWidth + moveValue > 0) {
-    translateBoxLeft.value = originLeft - centerOffsetX;
+  if(originWidth + param.moveValue > 0) {
+    param.translateBoxLeft.value = originLeft - centerOffsetX;
   }else{
-    translateBoxLeft.value = originLeft + (moveValue + originWidth) - centerOffsetX;
+    param.translateBoxLeft.value = originLeft + (param.moveValue + originWidth) - centerOffsetX;
   }
 }
 
-function moveToLeft(moveValue: number) {
-  setWidthOrHeight(moveValue, 'with')
-  const [centerOffsetX, centerOffsetY] = getCenterOffset(moveValue, 'with')
+function moveToLeft(param: MoveToParam) {
+  setWidthOrHeight({...{type: 'with'}, ...param})
+  const [centerOffsetX, centerOffsetY] = getCenterOffset(param.translateBoxRotate, param.moveValue, 'with')
 
-  if(isShift.value) {
-    const heightAddValue = translateBoxHeight.value - originHeight;
-    translateBoxTop.value = originTop - centerOffsetY - heightAddValue/2;
-  }else translateBoxTop.value = originTop - centerOffsetY;
+  if(param.isShift.value) {
+    const heightAddValue = param.translateBoxHeight.value - originHeight;
+    param.translateBoxTop.value = originTop - centerOffsetY - heightAddValue/2;
+  }else param.translateBoxTop.value = originTop - centerOffsetY;
 
-  if(originWidth + moveValue > 0) {
-    translateBoxLeft.value = originLeft - moveValue + centerOffsetX;
+  if(originWidth + param.moveValue > 0) {
+    param.translateBoxLeft.value = originLeft - param.moveValue + centerOffsetX;
   }else{
-    translateBoxLeft.value = originLeft + originWidth + centerOffsetX;
+    param.translateBoxLeft.value = originLeft + originWidth + centerOffsetX;
   }
 }
 
-function moveToBottom(moveValue: number) {
-  setWidthOrHeight(moveValue, 'height')
-  const [centerOffsetX, centerOffsetY] = getCenterOffset(moveValue, 'height')
+function moveToBottom(param: MoveToParam) {
+  setWidthOrHeight({...{type: 'height'}, ...param})
+  const [centerOffsetX, centerOffsetY] = getCenterOffset(param.translateBoxRotate, param.moveValue, 'height')
 
-  if(isShift.value) {
-    const widthAddValue = translateBoxWidth.value - originWidth;
-    translateBoxLeft.value = originLeft - centerOffsetX - widthAddValue/2;
-  }else translateBoxLeft.value = originLeft - centerOffsetX;
+  if(param.isShift.value) {
+    const widthAddValue = param.translateBoxWidth.value - originWidth;
+    param.translateBoxLeft.value = originLeft - centerOffsetX - widthAddValue/2;
+  }else param.translateBoxLeft.value = originLeft - centerOffsetX;
 
-  if(originHeight + moveValue > 0) {
-    translateBoxTop.value = originTop - centerOffsetY;
+  if(originHeight + param.moveValue > 0) {
+    param.translateBoxTop.value = originTop - centerOffsetY;
   }else {
-    translateBoxTop.value = originTop + moveValue + originHeight - centerOffsetY;
+    param.translateBoxTop.value = originTop + param.moveValue + originHeight - centerOffsetY;
   }
 }
 
-function moveToTop(moveValue: number) {
-  setWidthOrHeight(moveValue, 'height')
-  const [centerOffsetX, centerOffsetY] = getCenterOffset(moveValue, 'height')
+function moveToTop(param: MoveToParam) {
+  setWidthOrHeight({...{type: 'height'}, ...param})
+  const [centerOffsetX, centerOffsetY] = getCenterOffset(param.translateBoxRotate, param.moveValue, 'height')
   
-  if(isShift.value) {
-    const widthAddValue = translateBoxWidth.value - originWidth;
-    translateBoxLeft.value = originLeft + centerOffsetX - widthAddValue/2;
-  }else translateBoxLeft.value = originLeft + centerOffsetX;
+  if(param.isShift.value) {
+    const widthAddValue = param.translateBoxWidth.value - originWidth;
+    param.translateBoxLeft.value = originLeft + centerOffsetX - widthAddValue/2;
+  }else param.translateBoxLeft.value = originLeft + centerOffsetX;
   
-  if(originHeight + moveValue > 0) {
-    translateBoxTop.value = originTop - moveValue + centerOffsetY;
+  if(originHeight + param.moveValue > 0) {
+    param.translateBoxTop.value = originTop - param.moveValue + centerOffsetY;
   }else {
-    translateBoxTop.value = originTop + originHeight + centerOffsetY;
+    param.translateBoxTop.value = originTop + originHeight + centerOffsetY;
   }
 }
 
@@ -213,7 +223,7 @@ type NewValue = {
   newWidth: number,
   newHeight: number,
 }
-function getB_point(originB_point: [number, number]) {
+function getB_point(originB_point: [number, number], translateBoxRotate: Ref<number>) {
   const B_point: [number, number] = Tool.createLatLngOfRotate({
     latLng: originB_point,
     center: [centerX, centerY],
@@ -221,17 +231,18 @@ function getB_point(originB_point: [number, number]) {
   })
   return B_point
 }
-function getC_Point(e: MouseEvent, originB_point: [number, number]) {
-  let C_point: [number, number] = [e.clientX, e.clientY];
-  const B_point: [number, number] = getB_point(originB_point);
-  if(isShift.value) {
+
+interface GetC_Point extends SpreadBaseParam { originB_point: [number, number] }
+function getC_Point(param: GetC_Point) {
+  let C_point: [number, number] = [param.e.clientX, param.e.clientY];
+  const B_point: [number, number] = getB_point(param.originB_point, param.translateBoxRotate);
+  if(param.isShift.value) {
     let CAB_angle = Tool.getAngleOfThreePoint(
       [centerX, centerY],
       B_point,
       C_point,
     )
     
-    // TODO 这里有点生硬，或者可以把中心点换成无限远的一个点
     if(CAB_angle > 90) CAB_angle = CAB_angle-180;
     else if(CAB_angle < -90) CAB_angle = CAB_angle+180;
 
@@ -244,14 +255,14 @@ function getC_Point(e: MouseEvent, originB_point: [number, number]) {
 
   return C_point;
 }
-function getCalcNewValue(C_point: [number, number], D_point: [number, number], originB_point: [number, number], xIsSin: boolean): NewValue {
+function getCalcNewValue(translateBoxRotate: Ref<number>, C_point: [number, number], D_point: [number, number], originB_point: [number, number], xIsSin: boolean): NewValue {
   const D1_point = Tool.createLatLngOfRotate({
     latLng: D_point,
     center: [centerX, centerY],
     rotateNum: -translateBoxRotate.value
   })
 
-  const B_point = getB_point(originB_point)
+  const B_point = getB_point(originB_point, translateBoxRotate)
   const D1BC_angle = Tool.getAngleOfThreePoint(B_point, D1_point, C_point, true);
   const EBC_angle = Math.PI - D1BC_angle;
 
@@ -265,7 +276,18 @@ function getCalcNewValue(C_point: [number, number], D_point: [number, number], o
   return { newCenter, C_point, newWidth, newHeight }
 }
 
-function setPotionAndShape(newValueObj: NewValue, M2_point: [number, number]) {
+interface SetPotionAndShape extends SpreadBaseParam {newValueObj: NewValue, M2_point: [number, number]}
+function setPotionAndShape({
+  M2_point, 
+  newValueObj, 
+  translateBoxRotate, 
+  translateBoxWidth, 
+  translateBoxHeight, 
+  translateBoxTop, 
+  translateBoxLeft, 
+  isReverseX, 
+  isReverseY
+}: SetPotionAndShape) {
   const M3_point: [number, number] = Tool.createLatLngOfRotate({
     latLng: M2_point,
     center: newValueObj.newCenter, 
@@ -295,59 +317,59 @@ function setPotionAndShape(newValueObj: NewValue, M2_point: [number, number]) {
   }
 }
 
-function moveToRightBottom(e: MouseEvent) {
+function moveToRightBottom(param: SpreadBaseParam) {
   const D_point: [number, number] = [centerX + originWidth / 2, centerY];
   const originB_point: [number, number] = [centerX+originWidth/2, centerY+originHeight/2];
 
-  const newValueObj = getCalcNewValue(getC_Point(e, originB_point), D_point, originB_point, true);
+  const newValueObj = getCalcNewValue(param.translateBoxRotate, getC_Point({...{originB_point: originB_point}, ...param}), D_point, originB_point, true);
 
   const M2_point: [number, number] = [
     newValueObj.newCenter[0]+newValueObj.newWidth/2, 
     newValueObj.newCenter[1]+newValueObj.newHeight/2
   ];
 
-  setPotionAndShape(newValueObj, M2_point)
+  setPotionAndShape({...{newValueObj: newValueObj, M2_point: M2_point}, ...param})
 }
 
-function moveToRightTop(e: MouseEvent) {
+function moveToRightTop(param: SpreadBaseParam) {
   const D_point: [number, number] = [centerX, centerY - originHeight/2];
   const originB_point: [number, number] = [centerX+originWidth/2, centerY-originHeight/2];
 
-  const newValueObj = getCalcNewValue(getC_Point(e, originB_point), D_point, originB_point, false);
+  const newValueObj = getCalcNewValue(param.translateBoxRotate, getC_Point({...{originB_point: originB_point}, ...param}), D_point, originB_point, false);
 
   const M2_point: [number, number] = [
     newValueObj.newCenter[0]+newValueObj.newWidth/2, 
     newValueObj.newCenter[1]-newValueObj.newHeight/2
   ];
 
-  setPotionAndShape(newValueObj, M2_point)
+  setPotionAndShape({...{newValueObj: newValueObj, M2_point: M2_point}, ...param})
 }
 
-function moveToLeftTop(e: MouseEvent) {
+function moveToLeftTop(param: SpreadBaseParam) {
   const originB_point: [number, number] = [centerX-originWidth/2, centerY-originHeight/2];
   const D_point: [number, number] = [centerX - originWidth / 2, centerY];
 
-  const newValueObj = getCalcNewValue(getC_Point(e, originB_point), D_point, originB_point, true);
+  const newValueObj = getCalcNewValue(param.translateBoxRotate, getC_Point({...{originB_point: originB_point}, ...param}), D_point, originB_point, true);
 
   const M2_point: [number, number] = [
     newValueObj.newCenter[0]-newValueObj.newWidth/2, 
     newValueObj.newCenter[1]-newValueObj.newHeight/2
   ];
 
-  setPotionAndShape(newValueObj, M2_point)
+  setPotionAndShape({...{newValueObj: newValueObj, M2_point: M2_point}, ...param})
 }
 
-function moveToLeftBottom(e: MouseEvent) {
+function moveToLeftBottom(param: SpreadBaseParam) {
   const D_point: [number, number] = [centerX, centerY+originHeight/2];
   const originB_point: [number, number] = [centerX-originWidth/2, centerY+originHeight/2];
 
-  const newValueObj = getCalcNewValue(getC_Point(e, originB_point), D_point, originB_point, false);
+  const newValueObj = getCalcNewValue(param.translateBoxRotate, getC_Point({...{originB_point: originB_point}, ...param}), D_point, originB_point, false);
 
   const M2_point: [number, number] = [
     newValueObj.newCenter[0]-newValueObj.newWidth/2, 
     newValueObj.newCenter[1]+newValueObj.newHeight/2
   ];
 
-  setPotionAndShape(newValueObj, M2_point)
+  setPotionAndShape({...{newValueObj: newValueObj, M2_point: M2_point}, ...param})
 }
 // -------------------------对角线缩放end--------------------

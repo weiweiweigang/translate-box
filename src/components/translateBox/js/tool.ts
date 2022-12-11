@@ -6,11 +6,22 @@
  * @Description: 
  * @FilePath: \translateBox\src\components\translateBox\js\tool.ts
  */
+import UUID from 'uuidjs';
+
 export const Tool = {
   getAngleOfThreePoint,
   GetWebMercatorLen,
   createLatLngOfRotate,
-  DeepClone
+  DeepClone,
+  GetUID
+}
+
+/**
+ * @description: 获取UUID唯一标识
+ * @return {String} 返回UUID
+ */
+export function GetUID(): string {
+  return UUID.generate();
 }
 
 /**

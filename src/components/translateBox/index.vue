@@ -3,14 +3,15 @@
  * @Author: Strayer
  * @Date: 2022-12-04
  * @LastEditors: Strayer
- * @LastEditTime: 2022-12-10
+ * @LastEditTime: 2022-12-11
  * @Description: 图片编辑
- * @FilePath: \heat-web\src\components\translateBox\index.vue
+ * @FilePath: \translateBox\src\components\translateBox\index.vue
 -->
 <template>
   <!-- 这一层用作移动目标和旋转时的中心点点位 -->
   <div 
     class="translateBox" 
+    :id="boxId"
     :style="{
       transform: `translate(${translateBoxLeft}px, ${translateBoxTop}px)`
     }"
@@ -89,25 +90,19 @@
 </template>
 
 <script setup lang="ts">
-import { onUnmounted, watch } from 'vue';
+import { onUnmounted, ref, shallowRef, watch } from 'vue';
 import { 
   spreadBtnImg, 
   rotateBtnImg,
-  translateBoxLeft, 
-  translateBoxTop,
-  translateBoxWidth,
-  translateBoxHeight,
-  isReverseX,
-  isReverseY,
-  btnData,
-  translateBoxRotate,
   updateOriginBtnData,
   opacityZeroImg,
-updateBtnData
+  updateBtnData,
+Btn,
 } from './js/data';
-import { isMoving, moveHandle } from './js/move';
-import { rotateHandle, isRotating } from './js/rotate';
-import { isShift, isSpreading, MoveType, spreadHand, SpreadType } from './js/spread';
+import { moveHandle } from './js/move';
+import { rotateHandle } from './js/rotate';
+import { MoveType, spreadHand, SpreadType } from './js/spread';
+import { Tool } from './js/tool';
 
 // -----------对外接口begin-------
 const props = defineProps<{
@@ -138,6 +133,27 @@ const emit = defineEmits<{
 }>()
 // -----------对外接口end-------
 
+// 生成控制按钮
+const btnDataOrigin = shallowRef<Btn>([])
+const btnData = ref(Tool.DeepClone(btnDataOrigin.value))
+
+// 盒子相关属性
+const translateBoxLeft = ref(props.left ?? 0); 
+const translateBoxTop = ref(props.top ?? 0);
+const translateBoxWidth = ref(props.width ?? 200);
+const translateBoxHeight = ref(props.height ?? 200);
+const translateBoxRotate = ref(props.rotate ?? 0);
+const isReverseX = ref(false); // 盒子在横轴方向上是否倒置
+const isReverseY = ref(false); // 盒子在纵轴方向上是否倒置
+
+const boxId = ref(Tool.GetUID()); // 元素Id
+
+const isMoving = ref(false);
+const isRotating = ref(false);
+const isShift = ref(false); //是否按下control建
+const isSpreading = ref(false);
+const curSpreadType = ref<SpreadType>('top')
+
 /**
  * @description: 发送emit
  * @param {*} moveType
@@ -165,39 +181,53 @@ function emitHandle(moveType: MoveType, type: 'move' | 'spread' | 'rotate') {
 }
 
 watch(() => props.hideControlBtn, value => {
-  updateOriginBtnData(value)
-  updateBtnData();
+  updateOriginBtnData({ btnDataOrigin, btnData, isFull: value })
+  updateBtnData({ btnDataOrigin, btnData, translateBoxRotate });
 })
-updateOriginBtnData(props.hideControlBtn);
-initData();
-// 初始化数据
-function initData() {
-  translateBoxLeft.value = props.left ?? 0;
-  translateBoxTop.value = props.top ?? 0;
-  translateBoxWidth.value = props.width ?? 200;
-  translateBoxHeight.value = props.height ?? 200;
-  translateBoxRotate.value = props.rotate ?? 0;
-  isReverseY.value = false;
-  isReverseX.value = false;
-  isShift.value = false
-}
+updateOriginBtnData({ btnDataOrigin, btnData, isFull: props.hideControlBtn });
 
 // 本地转发一下，因为要出发emit
 function moveHandleLocal(moveType: MoveType, e: MouseEvent) {
-  moveHandle(moveType, e)
+  moveHandle({e, moveType, isMoving, translateBoxLeft, translateBoxTop})
   emitHandle(moveType, 'move')
 }
 
 // 本地转发一下，因为要出发emit
 function spreadHandLocal(spreadType: SpreadType, moveType: MoveType, e: MouseEvent) {
-  spreadHand(spreadType, moveType, e);
+  spreadHand({
+    e,
+    translateBoxRotate,
+    translateBoxWidth,
+    translateBoxHeight,
+    translateBoxTop,
+    translateBoxLeft,
+    isReverseX,
+    isReverseY,
+    isShift,
+    isSpreading,
+    curSpreadType,
+    boxId,
+    spreadType,
+    moveType
+  });
+
   emitHandle(moveType, 'spread');
 
   if(moveType === 'end') isShift.value = false; //鼠标按住不放时，不会触发按键的keyup事件
 }
 
 function rotateHandleLocal(moveType: MoveType, e: MouseEvent) {
-  rotateHandle(moveType, e)
+  rotateHandle({
+    e,
+    isRotating,
+    boxId,
+    translateBoxRotate,
+    translateBoxWidth,
+    translateBoxHeight,
+    btnDataOrigin,
+    btnData,
+    rotateType: moveType
+  })
   emitHandle(moveType, 'rotate')
 }
 
@@ -225,7 +255,6 @@ window.addEventListener('keyup', onKeyUp)
   position: absolute;
   top: 0;
   left: 0;
-  // border: 1px solid #e6e6e6;
 
   .content {
     cursor: move;
