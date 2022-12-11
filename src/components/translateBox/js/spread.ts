@@ -2,12 +2,11 @@
  * @Author: Strayer
  * @Date: 2022-12-04
  * @LastEditors: Strayer
- * @LastEditTime: 2022-12-10
+ * @LastEditTime: 2022-12-11
  * @Description: 
- * @FilePath: \heat-web\src\components\translateBox\js\spread.ts
+ * @FilePath: \translateBox\src\components\translateBox\js\spread.ts
  */
 import { ref } from "vue"
-import Util from '@/utils/util';
 import { 
   translateBoxHeight, 
   translateBoxLeft, 
@@ -17,6 +16,7 @@ import {
   isReverseY, 
   translateBoxRotate
 } from "./data";
+import { Tool } from "./tool";
 
 export type SpreadType = 'top' | 'right' | 'bottom' | 'left' | 'leftTop' | 'rightTop' | 'rightBottom' | 'leftBottom';
 export type MoveType = 'begin' | 'moving' | 'end'
@@ -90,9 +90,9 @@ function moveTo(e: MouseEvent, spreadType: SpreadType) {
  * @description: 上下左右缩放时计算在该方向上要移动的距离
  */
 function getMoveValue(e: MouseEvent): number {
-  const AC_len = Util.GetWebMercatorLen([[centerX, centerY], [e.clientX, e.clientY]])
-  const AO_len = Util.GetWebMercatorLen([[centerX, centerY], [mouseBeginX, mouseBeginY]])
-  const CAB_angle = Util.getAngleOfThreePoint([centerX, centerY], [mouseBeginX, mouseBeginY], [e.clientX, e.clientY], true);
+  const AC_len = Tool.GetWebMercatorLen([[centerX, centerY], [e.clientX, e.clientY]])
+  const AO_len = Tool.GetWebMercatorLen([[centerX, centerY], [mouseBeginX, mouseBeginY]])
+  const CAB_angle = Tool.getAngleOfThreePoint([centerX, centerY], [mouseBeginX, mouseBeginY], [e.clientX, e.clientY], true);
   const AB_len = AC_len * Math.cos(CAB_angle);
 
   return AB_len - AO_len;
@@ -214,7 +214,7 @@ type NewValue = {
   newHeight: number,
 }
 function getB_point(originB_point: [number, number]) {
-  const B_point: [number, number] = Util.createLatLngOfRotate({
+  const B_point: [number, number] = Tool.createLatLngOfRotate({
     latLng: originB_point,
     center: [centerX, centerY],
     rotateNum: -translateBoxRotate.value
@@ -225,7 +225,7 @@ function getC_Point(e: MouseEvent, originB_point: [number, number]) {
   let C_point: [number, number] = [e.clientX, e.clientY];
   const B_point: [number, number] = getB_point(originB_point);
   if(isShift.value) {
-    let CAB_angle = Util.getAngleOfThreePoint(
+    let CAB_angle = Tool.getAngleOfThreePoint(
       [centerX, centerY],
       B_point,
       C_point,
@@ -235,7 +235,7 @@ function getC_Point(e: MouseEvent, originB_point: [number, number]) {
     if(CAB_angle > 90) CAB_angle = CAB_angle-180;
     else if(CAB_angle < -90) CAB_angle = CAB_angle+180;
 
-    C_point = Util.createLatLngOfRotate({
+    C_point = Tool.createLatLngOfRotate({
       latLng: C_point,
       center: [centerX, centerY],
       rotateNum: CAB_angle
@@ -245,17 +245,17 @@ function getC_Point(e: MouseEvent, originB_point: [number, number]) {
   return C_point;
 }
 function getCalcNewValue(C_point: [number, number], D_point: [number, number], originB_point: [number, number], xIsSin: boolean): NewValue {
-  const D1_point = Util.createLatLngOfRotate({
+  const D1_point = Tool.createLatLngOfRotate({
     latLng: D_point,
     center: [centerX, centerY],
     rotateNum: -translateBoxRotate.value
   })
 
   const B_point = getB_point(originB_point)
-  const D1BC_angle = Util.getAngleOfThreePoint(B_point, D1_point, C_point, true);
+  const D1BC_angle = Tool.getAngleOfThreePoint(B_point, D1_point, C_point, true);
   const EBC_angle = Math.PI - D1BC_angle;
 
-  const BC_len = Util.GetWebMercatorLen([B_point, C_point]);
+  const BC_len = Tool.GetWebMercatorLen([B_point, C_point]);
   const moveX = xIsSin? BC_len*Math.sin(EBC_angle):BC_len*Math.cos(EBC_angle);
   const moveY = xIsSin? BC_len*Math.cos(EBC_angle):BC_len*Math.sin(EBC_angle);
   const newWidth = originWidth + moveX;
@@ -266,7 +266,7 @@ function getCalcNewValue(C_point: [number, number], D_point: [number, number], o
 }
 
 function setPotionAndShape(newValueObj: NewValue, M2_point: [number, number]) {
-  const M3_point: [number, number] = Util.createLatLngOfRotate({
+  const M3_point: [number, number] = Tool.createLatLngOfRotate({
     latLng: M2_point,
     center: newValueObj.newCenter, 
     rotateNum: -translateBoxRotate.value

@@ -2,14 +2,14 @@
  * @Author: Strayer
  * @Date: 2022-12-05
  * @LastEditors: Strayer
- * @LastEditTime: 2022-12-10
+ * @LastEditTime: 2022-12-11
  * @Description: 
- * @FilePath: \heat-web\src\components\translateBox\js\rotate.ts
+ * @FilePath: \translateBox\src\components\translateBox\js\rotate.ts
  */
 import { ref } from "vue"
 import { translateBoxHeight, translateBoxRotate, translateBoxWidth, updateBtnData } from './data';
-import Util from '@/utils/util';
 import { MoveType } from "./spread";
+import { Tool } from "./tool";
 
 export const isRotating = ref(false);
 
@@ -55,6 +55,6 @@ function endRotateHandle(e: MouseEvent) {
 }
 
 function rotateTo(e: MouseEvent) {
-  const angle = Util.getAngleOfThreePoint([centerX, centerY], [mouseBeginX, mouseBeginY], [e.clientX, e.clientY])
+  const angle = Tool.getAngleOfThreePoint([centerX, centerY], [mouseBeginX, mouseBeginY], [e.clientX, e.clientY])
   translateBoxRotate.value = originRotate + angle;
 }

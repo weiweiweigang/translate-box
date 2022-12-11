@@ -2,14 +2,14 @@
  * @Author: Strayer
  * @Date: 2022-12-04
  * @LastEditors: Strayer
- * @LastEditTime: 2022-12-10
+ * @LastEditTime: 2022-12-11
  * @Description: 
- * @FilePath: \heat-web\src\components\translateBox\js\data.ts
+ * @FilePath: \translateBox\src\components\translateBox\js\data.ts
  */
 
-import Tool from '@/tools/tool';
-import { ref, reactive, watch, shallowRef } from 'vue';
+import { ref, shallowRef } from 'vue';
 import { SpreadType } from "./spread";
+import { Tool } from './tool';
 
 // 缩放按钮图标
 export const spreadBtnImg = 'data:image/svg+xml;base64,PCFET0NUWVBFIHN2ZyBQVUJMSUMgIi0vL1czQy8vRFREIFNWRyAxLjEvL0VOIiAiaHR0cDovL3d3dy53My5vcmcvR3JhcGhpY3MvU1ZHLzEuMS9EVEQvc3ZnMTEuZHRkIj48c3ZnIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyIgeG1sbnM6eGxpbms9Imh0dHA6Ly93d3cudzMub3JnLzE5OTkveGxpbmsiIHdpZHRoPSIxOHB4IiBoZWlnaHQ9IjE4cHgiIHZlcnNpb249IjEuMSI+PGNpcmNsZSBjeD0iOSIgY3k9IjkiIHI9IjUiIHN0cm9rZT0iI2ZmZiIgZmlsbD0iIzI5YjZmMiIvPjwvc3ZnPg==';
