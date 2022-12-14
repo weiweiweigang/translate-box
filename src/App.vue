@@ -33,11 +33,12 @@ const form = reactive({
         :left="700"
         :top="100"
         :width="200"
-        :height="160"
+        :height="200"
         :hide-control-btn="true"
         :close-rotate="true"
       >
       <div class="control">
+        <p>按住shift键等比缩放</p>
         <el-form :model="form" label-width="120px">
           <el-form-item label="隐藏按钮">
             <el-switch v-model="form.hideControlBtn" />
