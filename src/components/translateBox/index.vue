@@ -3,7 +3,7 @@
  * @Author: Strayer
  * @Date: 2022-12-04
  * @LastEditors: Strayer
- * @LastEditTime: 2022-12-11
+ * @LastEditTime: 2023-02-03
  * @Description: 图片编辑
  * @FilePath: \translateBox\src\components\translateBox\index.vue
 -->
@@ -34,6 +34,7 @@
         @mousedown="moveHandleLocal('begin', $event)"
         @mousemove="moveHandleLocal('moving', $event)"
         @mouseup="moveHandleLocal('end', $event)"
+        @wheel="wheelHandLocal"
       >
         <slot></slot>
       </div>
@@ -103,6 +104,7 @@ import { moveHandle } from './js/move';
 import { rotateHandle } from './js/rotate';
 import { MoveType, spreadHand, SpreadType } from './js/spread';
 import { Tool } from './js/tool';
+import { wheelHand } from './js/wheel';
 
 // -----------对外接口begin-------
 const props = defineProps<{
@@ -114,6 +116,7 @@ const props = defineProps<{
   closeSpread?: boolean, // 关闭拉伸功能
   closeRotate?: boolean, // 关闭旋转功能
   hideControlBtn?: boolean, // 隐藏按钮，但功能可用
+  openWheelSpread?: boolean, //是否启动滚轮缩放
 }>()
 
 type EmitMoveObj = {
@@ -190,6 +193,19 @@ updateOriginBtnData({ btnDataOrigin, btnData, isFull: props.hideControlBtn });
 function moveHandleLocal(moveType: MoveType, e: MouseEvent) {
   moveHandle({e, moveType, isMoving, translateBoxLeft, translateBoxTop})
   emitHandle(moveType, 'move')
+}
+
+function wheelHandLocal(e:WheelEvent) {
+  wheelHand({
+    e, 
+    openWheelSpread: props.openWheelSpread, 
+    translateBoxWidth, 
+    translateBoxHeight, 
+    translateBoxTop, 
+    translateBoxLeft
+  })
+
+  emitHandle('end', 'spread');
 }
 
 // 本地转发一下，因为要出发emit

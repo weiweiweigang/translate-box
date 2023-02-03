@@ -17,6 +17,7 @@ const form = reactive({
         :hide-control-btn="form.hideControlBtn"
         :close-rotate="form.closeRotate"
         :close-spread="form.closeSpread"
+        :open-wheel-spread="true"
       >
         <img :style="{
           width: '100%',
