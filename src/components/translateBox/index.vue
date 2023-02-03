@@ -91,6 +91,7 @@
 </template>
 
 <script setup lang="ts">
+import { throttle } from 'lodash';
 import { onUnmounted, ref, shallowRef, watch } from 'vue';
 import { 
   spreadBtnImg, 
@@ -195,6 +196,9 @@ function moveHandleLocal(moveType: MoveType, e: MouseEvent) {
   emitHandle(moveType, 'move')
 }
 
+const wheelEmit = throttle(() => {
+    emitHandle('end', 'spread')
+  }, 200, {leading: false})
 function wheelHandLocal(e:WheelEvent) {
   wheelHand({
     e, 
@@ -205,8 +209,9 @@ function wheelHandLocal(e:WheelEvent) {
     translateBoxLeft
   })
 
-  emitHandle('end', 'spread');
+  wheelEmit()
 }
+
 
 // 本地转发一下，因为要出发emit
 function spreadHandLocal(spreadType: SpreadType, moveType: MoveType, e: MouseEvent) {
