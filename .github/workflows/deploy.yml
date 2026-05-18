@@ -24,8 +24,6 @@ jobs:
 
       - name: Install pnpm
         uses: pnpm/action-setup@v4
-        with:
-          version: 7 # 改成你本地的版本号，比如 8 或 9
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
