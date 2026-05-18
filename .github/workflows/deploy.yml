@@ -2,7 +2,7 @@ name: Deploy to GitHub Pages
 
 on:
   push:
-    branches: [main]  # 你是 main 还是 master？看你仓库分支名
+    branches: [master]  # 你是 main 还是 master？看你仓库分支名
 
 jobs:
   deploy:
