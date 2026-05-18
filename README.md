@@ -2,7 +2,7 @@
 
 按住shift等比例缩放
 
-[在线demo链接](https://hudiezhigeng.gitee.io/translate-box/)
+[在线demo链接](https://weiweiweigang.github.io/translate-box/)
 
 > 注：本项目推荐使用pnpm安装
 > 1. 先安装node;
