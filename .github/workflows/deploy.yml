@@ -1,20 +1,33 @@
 name: Deploy to GitHub Pages
+
 on:
   push:
-    branches: [master]
+    branches: [main]  # 你是 main 还是 master？看你仓库分支名
+
 jobs:
   deploy:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v2
+        with:
+          version: 8
+
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: 20
-          cache: 'npm'
-      - run: npm install
-      - run: npm run build
-      - name: Deploy
+          cache: 'pnpm'  # 这里必须改成 pnpm
+
+      - name: Install dependencies
+        run: pnpm install  # 用 pnpm 安装
+
+      - name: Build
+        run: pnpm run build  # 用 pnpm 构建
+
+      - name: Deploy to GitHub Pages
         uses: peaceiris/actions-gh-pages@v3
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
